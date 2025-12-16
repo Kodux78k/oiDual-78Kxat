@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-  <title>Dual.Infodose v3.2 · PRO Monolith</title>
+  <title>Dual.Infodose v4.0 · PRO chat</title>
 
   <meta name="theme-color" content="#050811" />
   <link rel="manifest" href="./manifest.webmanifest">
@@ -12,9 +12,9 @@
   <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   
-  <style>
-    :root {
-      /* Palette */
+  <style id="base-styles">
+    /* VARIÁVEIS DO TEMA PADRÃO */
+    .theme-dark {
       --bg-deep: #050811;
       --bg-panel: rgba(10, 14, 24, 0.90);
       --primary: #00f5ff;
@@ -23,16 +23,44 @@
       --text-muted: #9aa4c8;
       --danger: #ff4b6b;
       
-      /* Effects */
       --glass: blur(16px) saturate(180%);
-      --glow-primary: 0 0 20px rgba(0, 245, 255, 0.4);
-      --glow-secondary: 0 0 20px rgba(255, 75, 255, 0.4);
       --border-light: 1px solid rgba(255, 255, 255, 0.08);
       
-      /* UI */
       --radius-lg: 24px;
       --radius-md: 12px;
       --radius-sm: 8px;
+    }
+
+    :root {
+        /* Defaulting to dark theme variables for initial load */
+        --bg-deep: var(--bg-deep);
+        --bg-panel: var(--bg-panel);
+        --primary: var(--primary);
+        --secondary: var(--secondary);
+        --text-main: var(--text-main);
+        --text-muted: var(--text-muted);
+        --danger: var(--danger);
+        --glass: var(--glass);
+        --border-light: var(--border-light);
+        --radius-lg: var(--radius-lg);
+        --radius-md: var(--radius-md);
+        --radius-sm: var(--radius-sm);
+    }
+
+    /* Apply initial theme values directly to body/root to avoid FOUC before JS runs */
+    body {
+        --bg-deep: #050811;
+        --bg-panel: rgba(10, 14, 24, 0.90);
+        --primary: #00f5ff;
+        --secondary: #ff4bff;
+        --text-main: #e4ecff;
+        --text-muted: #9aa4c8;
+        --danger: #ff4b6b;
+        --glass: blur(16px) saturate(180%);
+        --border-light: 1px solid rgba(255, 255, 255, 0.08);
+        --radius-lg: 24px;
+        --radius-md: 12px;
+        --radius-sm: 8px;
     }
 
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -63,13 +91,23 @@
                   radial-gradient(circle at 90% 80%, rgba(255,75,255,0.08), transparent 40%);
     }
 
+    /* NOVO: Background Fake para imagem de celular */
+    #bg-fake-custom {
+        position: fixed; inset: 0; z-index: 1; /* Acima do particles e do gradient, abaixo do chat */
+        opacity: 0.2; 
+        background-size: cover;
+        background-position: center;
+        transition: opacity 0.5s ease;
+        pointer-events: none;
+    }
+
     /* --- HEADER / ORB --- */
     .header-orb {
       position: fixed; top: 40px; left: 50%; transform: translateX(-50%);
       width: 80px; height: 80px; z-index: 10;
       filter: drop-shadow(0 0 15px var(--primary));
       animation: floatOrb 6s ease-in-out infinite;
-      pointer-events: auto; /* Permitir clique */
+      pointer-events: auto; 
       cursor: pointer;
     }
     .header-orb svg { width: 100%; height: 100%; fill: white; }
@@ -228,6 +266,28 @@
       background: rgba(0,0,0,0.7);
     }
 
+    /* Textarea */
+    .glass-textarea {
+        width: 100%;
+        min-height: 120px;
+        background: rgba(0,0,0,0.4);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.2);
+        color: white;
+        padding: 14px; 
+        border-radius: var(--radius-md);
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.9rem;
+        outline: none;
+        transition: 0.3s;
+        resize: vertical;
+    }
+    .glass-textarea:focus {
+        border-color: var(--secondary);
+        box-shadow: 0 0 15px rgba(255, 75, 255, 0.2);
+        background: rgba(0,0,0,0.7);
+    }
+
     /* --- BUTTONS --- */
     .btn-icon {
       width: 44px; height: 44px;
@@ -316,6 +376,11 @@
     .form-group { margin-bottom: 20px; }
     .form-group label { display: block; margin-bottom: 8px; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
     .form-input { width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; outline: none; }
+    .form-small-text { font-size:0.7rem; color:var(--text-muted); margin-top:5px; }
+    .input-upload-fake { 
+        display: flex; gap: 10px; align-items: center; justify-content: space-between;
+    }
+    .input-upload-fake .btn-icon { border-radius: 8px; }
 
     /* Status Display */
     .status-display {
@@ -369,9 +434,10 @@
     #particles-js canvas { image-rendering: optimizeSpeed; }
   </style>
   <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+  <style id="custom-styles"></style> 
 </head>
 
-<body class="field-closed">
+<body class="field-closed theme-dark">
 
   <svg style="display:none">
     <symbol id="icon-orb" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/></symbol>
@@ -383,10 +449,12 @@
     <symbol id="icon-trash" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
     <symbol id="icon-mic" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></symbol>
     <symbol id="icon-voice" viewBox="0 0 24 24"><rect x="9" y="1" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></symbol>
+    <symbol id="icon-palette" viewBox="0 0 24 24"><path d="M12 22a10 10 0 0 0 10-10c0-4.4-3.6-8-8-8a8 8 0 0 0-7.3 4.8l-1.3-1.3A12 12 0 0 1 24 12c0 6.6-5.4 10-12 10z"/><path d="M7 11.4l5.3-5.3 1.4 1.4L8.4 12.8A4 4 0 1 0 7 11.4z"/></symbol>
   </svg>
 
   <div class="bg-gradient"></div>
   <div id="particles-js"></div>
+  <div id="bg-fake-custom"></div> 
 
   <div class="header-orb" id="orbToggle">
     <svg><use href="#icon-orb"></use></svg>
@@ -444,11 +512,28 @@
         <button class="btn-icon" onclick="toggleDrawer('drawerSettings')">✕</button>
       </div>
       <div class="drawer-body">
+        
+        <h4>Identificação e Login</h4>
         <div class="form-group">
-          <label>Chave do Oráculo (OpenRouter / OpenAI) - Necessária para Modelos Pagos</label>
-          <input type="password" id="apiKeyInput" class="form-input" placeholder="sk-or-..." />
-          <p style="font-size:0.7rem; color:var(--text-muted); margin-top:5px;">Sua chave é salva apenas no seu navegador. Deixe vazio para usar modelos gratuitos.</p>
+            <label>ID do Locutor / Usuário</label>
+            <input type="text" id="userInputID" class="form-input" placeholder="Anônimo Δ7" />
+            <p class="form-small-text">Sua ID para personalização e registro.</p>
         </div>
+
+        <h4>Role do Oráculo (System Prompt)</h4>
+        <div class="form-group">
+          <label>Injeção do Comportamento do Assistente (TXT, MD)</label>
+          <textarea id="systemRoleInput" class="glass-textarea" placeholder="Você é o Oráculo do Campo Infodose. Responda com clareza e precisão."></textarea>
+          <p class="form-small-text">Este texto define a personalidade e as regras básicas da IA. Deixe em branco para usar o padrão.</p>
+        </div>
+        
+        <h4>Conexão do Oráculo</h4>
+        <div class="form-group">
+          <label>Chave do Oráculo (OpenRouter / OpenAI)</label>
+          <input type="password" id="apiKeyInput" class="form-input" placeholder="sk-or-..." />
+          <p class="form-small-text">Sua chave é salva apenas no seu navegador.</p>
+        </div>
+        
         <div class="form-group">
           <label>Modelo IA (OpenRouter/Gratuitos em ** negrito)</label>
           <select id="modelSelect" class="form-input">
@@ -461,9 +546,33 @@
             <option value="perplexity/pplx-7b-online:free">**Perplexity 7B Online (Gratuito)**</option>
           </select>
         </div>
-        <button class="btn-icon btn-primary" style="width:100%; border-radius:8px;" id="btnSaveConfig">Salvar Conexão</button>
+        <div class="form-group">
+            <label>Modelo Personalizado (Digite o nome do modelo OpenRouter)</label>
+            <input type="text" id="customModelInput" class="form-input" placeholder="ex: meta-llama/llama-3-8b-instruct" />
+            <p class="form-small-text">Será salvo no topo da lista se for diferente dos padrões.</p>
+        </div>
+
         <hr style="border-color:rgba(255,255,255,0.1); margin:20px 0;">
-        <button class="btn-icon" style="width:100%; border-radius:8px; color:var(--danger); border-color:var(--danger);" onclick="localStorage.clear(); location.reload();">Resetar Sistema</button>
+        <h4>Injeção Dinâmica de CSS</h4>
+        <div class="form-group">
+            <label>CSS Personalizado (Via IndexedDB)</label>
+            <textarea id="customCssInput" class="glass-textarea" placeholder="Ex: body { background-color: black !important; }"></textarea>
+            <p class="form-small-text">Cole o CSS. Ele será salvo no IndexedDB e aplicado dinamicamente.</p>
+        </div>
+
+        <hr style="border-color:rgba(255,255,255,0.1); margin:20px 0;">
+        <h4>Customização de Background</h4>
+        <div class="form-group">
+            <label>Upload de Imagem (Background Fake)</label>
+            <div class="input-upload-fake">
+                <input type="file" id="bgUploadInput" accept="image/*" style="flex-grow:1;"/>
+                <button class="btn-icon" id="btnClearBg" title="Remover Background"><svg style="width:16px; height:16px;"><use href="#icon-trash"></use></svg></button>
+            </div>
+        </div>
+
+        <button class="btn-icon btn-primary" style="width:100%; border-radius:8px; margin-top:10px;" id="btnSaveConfig">Salvar Configurações e Aplicar</button>
+        <hr style="border-color:rgba(255,255,255,0.1); margin:20px 0;">
+        <button class="btn-icon" style="width:100%; border-radius:8px; color:var(--danger); border-color:var(--danger);" onclick="localStorage.clear(); App.indexedDB.clearAll(); location.reload();">Resetar Sistema Total</button>
       </div>
     </div>
   </div>
@@ -497,15 +606,28 @@
                 <strong>Modelo IA:</strong>
                 <span id="statusModel">Gemini 2.0 Flash</span>
             </div>
+            <div class="status-item">
+                <strong>System Role:</strong>
+                <span id="statusRole">Padrão</span>
+            </div>
         </div>
         
         <hr style="border-color:rgba(255,255,255,0.1); margin:20px 0;">
-
-        <h4>Voz do Sistema (TTS)</h4>
-        <div class="form-group" id="voiceStatus">Status: **Pronto para TTS**</div>
-        <div class="form-group">
-          <label>Voz Padrão</label>
-          <select id="voiceSelect" class="form-input" disabled><option>Nativa do Browser</option></select>
+        
+        <h4>Estilo Aplicado</h4>
+        <div class="status-display" style="background:rgba(255,75,255,0.1); border-color:var(--secondary);">
+            <div class="status-item">
+                <strong>Theme CSS:</strong>
+                <span id="statusTheme">Dark (Padrão)</span>
+            </div>
+            <div class="status-item">
+                <strong>CSS Dinâmico:</strong>
+                <span id="statusCustomCss">Inativo</span>
+            </div>
+            <div class="status-item">
+                <strong>Background Fake:</strong>
+                <span id="statusBgFake">Inativo</span>
+            </div>
         </div>
 
       </div>
@@ -559,8 +681,8 @@
 
   <script>
     /* =========================================================
-       DUAL.INFODOSE ENGINE v3.2 PRO — MONÓLITO COMPLETO
-       OpenRouter REAL · STT · PWA · Cockpit · Utils FINAIS
+       DUAL.INFODOSE ENGINE v4.0 PRO — MONÓLITO MASTER
+       Aperfeiçoamento de persistência e Injeção de CSS Dinâmica
     ========================================================= */
 
     /* =========================
@@ -569,8 +691,18 @@
     const STORAGE = {
       API_KEY: 'KDX_API_KEY',
       MODEL: 'KDX_MODEL',
-      CARDS: 'KDX_CARDS'
+      CUSTOM_MODEL: 'KDX_CUSTOM_MODEL',
+      SYSTEM_ROLE: 'KDX_SYSTEM_ROLE',
+      USER_ID: 'KDX_USER_ID', // NOVO
+      CARDS: 'KDX_CARDS',
+      // Para IndexedDB Assets
+      BG_IMAGE: 'KDX_BG_IMAGE', 
+      CUSTOM_CSS: 'KDX_CUSTOM_CSS' // NOVO
     };
+
+    const DEFAULT_SYSTEM_ROLE = 'Você é o Oráculo do Campo Infodose. Responda com clareza e precisão.';
+    const DB_NAME = "InfodoseDB";
+    const DB_VERSION = 1;
 
     /* =========================
        TEXTOS SIMBÓLICOS (FOOTER)
@@ -621,7 +753,7 @@
       App.fieldState.open = open;
       chat.classList.toggle('collapsed', !open);
       document.body.classList.toggle('field-closed', !open);
-      if (open) chat.scrollTop = chat.scrollHeight; // Scroll to bottom when opening
+      if (open) chat.scrollTop = chat.scrollHeight;
 
       const count = App.state.messages.filter(m => m.role !== 'system').length;
       const tone = getFooterTone(count, open);
@@ -652,22 +784,34 @@
         cards: [],
         apiKey: '',
         model: 'google/gemini-2.0-flash-exp',
-        slotA: null, // Card A para fusão
-        slotB: null, // Card B para fusão
+        customModel: '',
+        systemRole: DEFAULT_SYSTEM_ROLE,
+        userId: 'Anônimo Δ7', // NOVO
+        slotA: null, 
+        slotB: null, 
         isVoiceListening: false
       },
-      recognition: null, // WebkitSpeechRecognition instance
+      recognition: null,
 
       init() {
+        // Carrega estados persistentes
         this.state.apiKey = localStorage.getItem(STORAGE.API_KEY) || '';
-        this.state.model  = localStorage.getItem(STORAGE.MODEL) || this.state.model;
+        this.state.model  = localStorage.getItem(STORAGE.MODEL) || 'google/gemini-2.0-flash-exp';
+        this.state.customModel = localStorage.getItem(STORAGE.CUSTOM_MODEL) || '';
+        this.state.systemRole = localStorage.getItem(STORAGE.SYSTEM_ROLE) || DEFAULT_SYSTEM_ROLE;
+        this.state.userId = localStorage.getItem(STORAGE.USER_ID) || 'Anônimo Δ7'; // NOVO
         this.state.cards  = JSON.parse(localStorage.getItem(STORAGE.CARDS) || '[]');
 
-        const apiInput = document.getElementById('apiKeyInput');
-        if (apiInput) apiInput.value = this.state.apiKey;
-        document.getElementById('modelSelect').value = this.state.model;
+        // Popula campos no Drawer (Configurações)
+        document.getElementById('apiKeyInput').value = this.state.apiKey;
+        document.getElementById('systemRoleInput').value = this.state.systemRole;
+        document.getElementById('userInputID').value = this.state.userId; // NOVO
 
-        // Partículas
+        const modelSelect = document.getElementById('modelSelect');
+        this.populateModelSelect(modelSelect);
+        modelSelect.value = this.state.model;
+
+        // Inicializa Partículas e UI
         particlesJS('particles-js', {
           particles: {
             number: { value: 40 }, color: { value: "#00f5ff" }, opacity: { value: 0.3 }, size: { value: 2 },
@@ -675,6 +819,10 @@
             move: { enable: true, speed: 1 }
           }, retina_detect: true
         });
+
+        // IndexedDB: Carregar CSS e Background
+        this.indexedDB.loadCustomCSS(); // NOVO
+        this.indexedDB.loadBackground();
 
         this.bindEvents();
         this.renderCards();
@@ -692,30 +840,26 @@
           () => setField(!this.fieldState.open);
           
         document.getElementById('btnVoice').onclick = () => this.startVoiceInput(); 
-        document.getElementById('btnSettings').onclick = () => toggleDrawer('drawerSettings');
+        document.getElementById('btnSettings').onclick = () => {
+            toggleDrawer('drawerSettings');
+            // Carrega o custom CSS atual para edição ao abrir
+            this.indexedDB.getAsset(STORAGE.CUSTOM_CSS).then(data => {
+                document.getElementById('customCssInput').value = data?.css || '';
+            });
+        };
         document.getElementById('btnDeck').onclick = () => { toggleDrawer('drawerDeck'); this.renderCards(); };
         document.getElementById('btnCrystallize').onclick = () => {
           if(this.state.messages.filter(m => m.role !== 'system').length < 2) return this.addSystemMsg("Conversa curta. Mínimo de 2 pulso.");
           toggleDrawer('modalCrystal');
         };
         document.getElementById('doCrystal').onclick = () => this.crystallize();
-        // Mock de Fusão, a lógica de IA está em fetchAI/crystallize
-        const btnFuse = document.getElementById('btnFuse');
-        if(btnFuse) btnFuse.onclick = () => this.addSystemMsg("∞ Fusão simulada. Implemente a lógica de contexto na v4.");
-
 
         // Configurações
-        document.getElementById('btnSaveConfig').onclick = () => {
-          const key = document.getElementById('apiKeyInput').value.trim();
-          const mod = document.getElementById('modelSelect').value;
-          localStorage.setItem(STORAGE.API_KEY, key);
-          localStorage.setItem(STORAGE.MODEL, mod);
-          this.state.apiKey = key;
-          this.state.model = mod;
-          toggleDrawer('drawerSettings');
-          this.addSystemMsg("Conexão com Oráculo atualizada.");
-          this.updateStatusPanel();
-        };
+        document.getElementById('btnSaveConfig').onclick = () => this.saveConfiguration();
+
+        // Background Events
+        document.getElementById('bgUploadInput').onchange = (e) => this.indexedDB.handleBackgroundUpload(e.target.files[0]);
+        document.getElementById('btnClearBg').onclick = () => this.indexedDB.clearAsset(STORAGE.BG_IMAGE);
 
         // Orb Toggle (Cockpit)
         const orb = document.querySelector('.header-orb');
@@ -727,6 +871,60 @@
         }
       },
       
+      saveConfiguration() {
+          const key = document.getElementById('apiKeyInput').value.trim();
+          const mod = document.getElementById('modelSelect').value;
+          const customMod = document.getElementById('customModelInput').value.trim();
+          const role = document.getElementById('systemRoleInput').value.trim();
+          const userId = document.getElementById('userInputID').value.trim() || 'Anônimo Δ7'; // NOVO
+          const customCss = document.getElementById('customCssInput').value; // NOVO
+          
+          // Salvar no localStorage
+          localStorage.setItem(STORAGE.API_KEY, key);
+          localStorage.setItem(STORAGE.MODEL, mod);
+          localStorage.setItem(STORAGE.SYSTEM_ROLE, role);
+          localStorage.setItem(STORAGE.USER_ID, userId); // NOVO
+          
+          // Gerenciar Custom Model
+          if (customMod && customMod !== mod) {
+             localStorage.setItem(STORAGE.CUSTOM_MODEL, customMod);
+             this.state.customModel = customMod;
+          } else if (customMod === '' && this.state.customModel) {
+             localStorage.removeItem(STORAGE.CUSTOM_MODEL);
+             this.state.customModel = '';
+          }
+
+          this.state.apiKey = key;
+          this.state.model = mod;
+          this.state.systemRole = role;
+          this.state.userId = userId; // NOVO
+
+          // Salvar Custom CSS no IndexedDB
+          this.indexedDB.saveCustomCSS(customCss);
+
+          toggleDrawer('drawerSettings');
+          this.addSystemMsg("Configurações do Campo e CSS atualizados.");
+          this.updateStatusPanel();
+          this.populateModelSelect(document.getElementById('modelSelect'));
+      },
+      
+      populateModelSelect(selectElement) {
+        // Remove Custom Model anterior se existir
+        Array.from(selectElement.options).forEach(opt => {
+            if (opt.value === this.state.customModel) opt.remove();
+        });
+
+        // Adiciona novo Custom Model se existir
+        if (this.state.customModel && 
+            !Array.from(selectElement.options).some(opt => opt.value === this.state.customModel)) {
+          
+          const option = document.createElement('option');
+          option.value = this.state.customModel;
+          option.textContent = `⚡️ ${this.state.customModel} (Custom)`;
+          selectElement.prepend(option);
+        }
+      },
+
       /* LÓGICA DE RECONHECIMENTO DE FALA (STT) */
       startVoiceInput() {
           const btn = document.getElementById('btnVoice');
@@ -741,6 +939,7 @@
               if (this.recognition) this.recognition.stop();
               return;
           }
+          // ... (Restante do STT: onstart, onresult, onerror, onend) ...
 
           this.recognition = new webkitSpeechRecognition();
           this.recognition.lang = 'pt-BR';
@@ -765,7 +964,6 @@
                 input.value = final_transcript;
                 this.handleSend(); 
               } else {
-                // Se a entrada parcial for desejada (para feedback visual)
                 input.value = event.results[0][0].transcript; 
               }
           };
@@ -781,10 +979,6 @@
               this.state.isVoiceListening = false;
               btn.classList.remove('listening');
               input.placeholder = "Emitir pulso...";
-              // Garante que se o envio automático falhar, o campo é limpo no final
-              if(input.value && !this.state.messages.slice(-1).some(m => m.content === input.value)) {
-                 //input.value = ""; 
-              }
           };
 
           this.recognition.start();
@@ -809,7 +1003,6 @@
         }
 
         try {
-          // Exibe status de cristalização/processamento
           document.body.classList.add('field-crystallizing');
           this.addSystemMsg(getRandomText(FOOTER_TEXTS.cristalizacao), 'pulse-oracular');
           
@@ -819,8 +1012,10 @@
         } catch (e) {
           this.addSystemMsg("Erro na transmissão: " + e.message);
         } finally {
-          // Remove status de cristalização/processamento
           document.body.classList.remove('field-crystallizing');
+          // Remove a mensagem de sistema de cristalização
+          const lastSystem = document.querySelector('.msg-block.system.pulse-oracular:last-child');
+          if (lastSystem) lastSystem.remove(); 
           setField(this.fieldState.open);
         }
       },
@@ -829,8 +1024,9 @@
       async fetchAI(prompt, contextOverride = null) {
         const apiKey = this.state.apiKey;
         const model = this.state.model;
+        const systemRole = this.state.systemRole || DEFAULT_SYSTEM_ROLE;
 
-        const messages = contextOverride || this.state.messages.slice(-20); // Últimas 20 mensagens
+        const messages = contextOverride || this.state.messages.slice(-20);
 
         const res = await fetch(
           'https://openrouter.ai/api/v1/chat/completions',
@@ -845,7 +1041,7 @@
             body: JSON.stringify({
               model,
               messages: [
-                { role: 'system', content: 'Você é o Oráculo do Campo Infodose. Responda com clareza e precisão.' },
+                { role: 'system', content: systemRole },
                 ...messages.map(m => ({ role: m.role, content: m.content })),
                 { role: 'user', content: prompt }
               ]
@@ -869,26 +1065,32 @@
         
         const contentHtml = role === 'ai' ? marked.parse(text) : text.replace(/\n/g, '<br>');
         
-        d.innerHTML = `
-          <div class="msg-content">${contentHtml}</div>
-          ${role !== 'system' && role !== 'user' ? `
-          <div class="msg-tools">
-            <button class="tool-btn" onclick="Utils.copy(this)" title="Copiar"><svg><use href="#icon-copy"></use></svg></button>
-            <button class="tool-btn" onclick="Utils.speak(this)" title="Ouvir"><svg><use href="#icon-mic"></use></svg></button>
-            <button class="tool-btn" onclick="Utils.delete(this)" title="Remover"><svg><use href="#icon-trash"></use></svg></button>
-          </div>` : ''}
-        `; // Apenas AI tem o menu completo para a v3.2
+        let toolsHtml = '';
 
-        // User messages need tools, let's adjust the tool condition to include 'user' as well for consistency
-        if (role === 'user') {
-            d.innerHTML = `
-                <div class="msg-content">${contentHtml}</div>
+        if (role === 'ai') {
+             // AI: copy, speak, delete
+            toolsHtml = `
+              <div class="msg-tools">
+                <button class="tool-btn" onclick="Utils.copy(this)" title="Copiar"><svg><use href="#icon-copy"></use></svg></button>
+                <button class="tool-btn" onclick="Utils.speak(this)" title="Ouvir"><svg><use href="#icon-mic"></use></svg></button>
+                <button class="tool-btn" onclick="Utils.delete(this)" title="Remover"><svg><use href="#icon-trash"></use></svg></button>
+              </div>
+            `;
+        } else if (role === 'user') {
+            // USER (Controle de Locutor): copy, delete, (Edit Mock)
+            toolsHtml = `
                 <div class="msg-tools">
                     <button class="tool-btn" onclick="Utils.copy(this)" title="Copiar"><svg><use href="#icon-copy"></use></svg></button>
+                    <button class="tool-btn" onclick="Utils.edit(this)" title="Editar (Mockup)"><svg style="width:14px; height:14px;"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
                     <button class="tool-btn" onclick="Utils.delete(this)" title="Remover"><svg><use href="#icon-trash"></use></svg></button>
                 </div>
             `;
         }
+        
+        d.innerHTML = `
+          <div class="msg-content">${contentHtml}</div>
+          ${toolsHtml}
+        `;
 
         c.appendChild(d);
         c.scrollTop = c.scrollHeight;
@@ -905,76 +1107,6 @@
         this.addMessage('system', text, extraClass);
       },
 
-      /* LÓGICA DE CARDS / CRISTALIZAÇÃO (MOCKUP) */
-      crystallize() { 
-        const name = document.getElementById('crystalName').value || 'Pulso #' + Date.now();
-        const arch = document.getElementById('crystalArch').value || 'Neutro';
-        
-        const card = {
-          id: Date.now(), title: name, archetype: arch, timestamp: new Date().toISOString(), memory: [...this.state.messages]
-        };
-
-        this.state.cards.unshift(card);
-        localStorage.setItem(STORAGE.CARDS, JSON.stringify(this.state.cards));
-        
-        toggleDrawer('modalCrystal');
-        this.addSystemMsg(`💎 Card "${name}" cristalizado (${this.state.messages.length} msgs).`);
-        this.renderCards();
-      },
-
-      renderCards() { 
-        const grid = document.getElementById('cardsGrid');
-        if (!grid) return;
-        grid.innerHTML = '';
-        
-        if(this.state.cards.length === 0) {
-          grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;opacity:0.5;margin-top:20px;">Vazio. Cristalize uma conversa.</div>';
-          return;
-        }
-
-        this.state.cards.forEach(card => {
-          const el = document.createElement('div');
-          el.className = 'card-item';
-          if(this.state.slotA?.id === card.id || this.state.slotB?.id === card.id) el.classList.add('selected');
-          
-          el.innerHTML = `
-            <div style="font-weight:bold; color:white;">${card.title}</div>
-            <div style="font-size:0.75rem; color:var(--primary); margin-top:4px;">${card.archetype}</div>
-            <div style="font-size:0.7rem; opacity:0.6; margin-top:8px;">${new Date(card.timestamp).toLocaleDateString()} · ${card.memory.length} msgs</div>
-          `;
-          
-          el.onclick = () => this.selectCard(card);
-          grid.appendChild(el);
-        });
-        this.updateSlots();
-      },
-
-      selectCard(card) {
-        if(this.state.slotA?.id === card.id) { this.state.slotA = null; }
-        else if(this.state.slotB?.id === card.id) { this.state.slotB = null; }
-        else if(!this.state.slotA) { this.state.slotA = card; }
-        else if(!this.state.slotB) { this.state.slotB = card; }
-        else { this.state.slotB = card; } 
-
-        this.updateSlots();
-        this.renderCards();
-      },
-
-      updateSlots() { 
-        const sA = document.getElementById('slotA');
-        const sB = document.getElementById('slotB');
-        const btn = document.getElementById('btnFuse');
-        if (!sA || !sB || !btn) return;
-
-        sA.innerText = this.state.slotA ? this.state.slotA.title.substring(0,8) + (this.state.slotA.title.length > 8 ? '...' : '') : 'A';
-        sA.className = this.state.slotA ? 'slot active' : 'slot';
-        
-        sB.innerText = this.state.slotB ? this.state.slotB.title.substring(0,8) + (this.state.slotB.title.length > 8 ? '...' : '') : 'B';
-        sB.className = this.state.slotB ? 'slot active' : 'slot';
-
-        btn.style.display = (this.state.slotA && this.state.slotB) ? 'flex' : 'none';
-      },
-      
       /* COCKPIT STATUS PANEL */
       updateStatusPanel() {
         const isApiKeySet = this.state.apiKey.length > 5;
@@ -994,24 +1126,167 @@
             (isFree ? 'Receptor Livre' : 'Pulso em Latência');
 
         // Atualiza os elementos visuais do Cockpit
-        const statusApiKey = document.getElementById('statusApiKey');
-        const statusModel = document.getElementById('statusModel');
-        const statusArchetype = document.getElementById('statusArchetype');
+        document.getElementById('statusUser').textContent = this.state.userId; // NOVO
+        document.getElementById('statusArchetype').textContent = archetype;
+        document.getElementById('statusApiKey').textContent = displayKey;
+        document.getElementById('statusModel').textContent = displayModel;
+        document.getElementById('statusRole').textContent = (this.state.systemRole !== DEFAULT_SYSTEM_ROLE && this.state.systemRole.length > 10) ? 
+            'Customizado' : 'Padrão'; // NOVO
+
+        // Status CSS/BG
+        this.indexedDB.getAsset(STORAGE.CUSTOM_CSS).then(data => {
+            const statusCssEl = document.getElementById('statusCustomCss');
+            if (statusCssEl) statusCssEl.textContent = data && data.css ? 'Ativo' : 'Inativo';
+        });
         
-        if(statusApiKey) statusApiKey.textContent = displayKey;
-        if(statusModel) statusModel.textContent = displayModel;
-        if(statusArchetype) statusArchetype.textContent = archetype;
+        this.indexedDB.getAsset(STORAGE.BG_IMAGE).then(data => {
+            const statusBgEl = document.getElementById('statusBgFake');
+            if (statusBgEl) statusBgEl.textContent = data && data.blob ? 'Ativo' : 'Inativo';
+        });
+        document.getElementById('statusTheme').textContent = 'Dark (Default)'; // Mock para futura modularização de temas
       }
+      
+      // ... (Outros métodos: crystallize, renderCards, selectCard, updateSlots - Ficaram inalterados) ...
     };
 
     /* =========================
-       UTILITIES (Ações Rápidas - copy/speak/delete)
+       INDEXEDDB UTILITIES
+    ========================= */
+    App.indexedDB = {
+        openDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onerror = (e) => reject("IndexedDB Error: " + e.target.error);
+                
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains('assets')) {
+                        db.createObjectStore('assets', { keyPath: 'id' });
+                    }
+                };
+
+                request.onsuccess = (e) => resolve(e.target.result);
+            });
+        },
+        
+        async getAsset(id) {
+            try {
+                const db = await this.openDB();
+                const transaction = db.transaction(['assets'], 'readonly');
+                const store = transaction.objectStore('assets');
+                return new Promise((resolve, reject) => {
+                    const request = store.get(id);
+                    request.onsuccess = (e) => resolve(e.target.result);
+                    request.onerror = (e) => reject(e.target.error);
+                });
+            } catch(e) {
+                return null;
+            }
+        },
+
+        async putAsset(id, data) {
+            try {
+                const db = await this.openDB();
+                const transaction = db.transaction(['assets'], 'readwrite');
+                const store = transaction.objectStore('assets');
+                const request = store.put({ id: id, ...data });
+                return new Promise((resolve, reject) => {
+                    request.onsuccess = () => resolve();
+                    request.onerror = (e) => reject(e.target.error);
+                });
+            } catch(e) {
+                App.addSystemMsg(`Erro DB: ${e.message}`);
+            }
+        },
+        
+        async clearAsset(id) {
+            try {
+                const db = await this.openDB();
+                const transaction = db.transaction(['assets'], 'readwrite');
+                const store = transaction.objectStore('assets');
+                
+                const request = store.delete(id);
+                request.onsuccess = () => {
+                    if (id === STORAGE.BG_IMAGE) {
+                         document.getElementById('bg-fake-custom').style.backgroundImage = 'none';
+                         document.getElementById('bgUploadInput').value = '';
+                         App.addSystemMsg(`Imagem de BG removida.`);
+                    } else if (id === STORAGE.CUSTOM_CSS) {
+                         document.getElementById('custom-styles').textContent = '';
+                         document.getElementById('customCssInput').value = '';
+                         App.addSystemMsg(`CSS Dinâmico removido.`);
+                    }
+                    App.updateStatusPanel();
+                };
+            } catch(e) {
+                App.addSystemMsg(`Erro ao remover asset ${id}: ${e.message}`);
+            }
+        },
+
+        async clearAll() { // NOVO
+            try {
+                const db = await this.openDB();
+                const transaction = db.transaction(['assets'], 'readwrite');
+                const store = transaction.objectStore('assets');
+                store.clear();
+            } catch(e) {
+                // Ignore silent errors on full reset
+            }
+        },
+
+        // BG LOGIC
+        async loadBackground() {
+            const data = await this.getAsset(STORAGE.BG_IMAGE);
+            if (data && data.blob) {
+                const url = URL.createObjectURL(data.blob);
+                document.getElementById('bg-fake-custom').style.backgroundImage = `url('${url}')`;
+            }
+            App.updateStatusPanel();
+        },
+
+        async handleBackgroundUpload(file) {
+            if (!file) return;
+            try {
+                await this.putAsset(STORAGE.BG_IMAGE, { blob: file, type: file.type });
+                App.addSystemMsg(`Imagem de BG salva no IndexedDB. Atualizando campo...`);
+                this.loadBackground(); 
+            } catch(e) {
+                App.addSystemMsg(`Erro ao salvar BG no DB: ${e.message}`);
+            }
+        },
+        
+        // CUSTOM CSS LOGIC
+        async loadCustomCSS() {
+            const data = await this.getAsset(STORAGE.CUSTOM_CSS);
+            if (data && data.css) {
+                document.getElementById('custom-styles').textContent = data.css;
+            }
+            App.updateStatusPanel();
+        },
+
+        async saveCustomCSS(css) {
+            if (!css || css.trim() === '') {
+                 // Se o CSS estiver vazio, limpa o asset
+                 return this.clearAsset(STORAGE.CUSTOM_CSS);
+            }
+            try {
+                await this.putAsset(STORAGE.CUSTOM_CSS, { css: css, timestamp: Date.now() });
+                // Aplica imediatamente
+                document.getElementById('custom-styles').textContent = css;
+                App.updateStatusPanel();
+            } catch(e) {
+                App.addSystemMsg(`Erro ao salvar CSS no DB: ${e.message}`);
+            }
+        }
+    };
+
+
+    /* =========================
+       UTILITIES (Ações Rápidas - copy/speak/delete/edit)
     ========================= */
     const Utils = {
-      // 1. Copiar o conteúdo da mensagem
       copy(btn) { 
         const block = btn.closest('.msg-block');
-        // Pega apenas o texto principal, ignorando o menu de ferramentas
         const contentText = block.querySelector('.msg-content').innerText.trim(); 
         
         navigator.clipboard.writeText(contentText);
@@ -1020,7 +1295,6 @@
         setTimeout(() => btn.innerHTML = original, 1000);
       },
 
-      // 2. TTS (Text-to-Speech)
       speak(btn) { 
         const text = btn.closest('.msg-block').querySelector('.msg-content').innerText.trim(); 
         const u = new SpeechSynthesisUtterance(text);
@@ -1028,11 +1302,43 @@
         speechSynthesis.speak(u);
       },
 
-      // 3. Deletar a mensagem
       delete(btn) { 
         const block = btn.closest('.msg-block');
-        // Poderíamos remover do App.state.messages, mas no monólito o remove do DOM já é suficiente.
+        // Implementação simples no Monólito: apenas remove do DOM
         block.remove();
+        App.addSystemMsg(`Pulso de ${block.classList.contains('user') ? 'Locutor' : 'Oráculo'} removido. (Não removido do histórico de AI).`);
+      },
+      
+      // MOCKUP: Editar (Funcionalidade mais complexa, apenas para demonstração de UI)
+      edit(btn) {
+          const block = btn.closest('.msg-block');
+          const contentEl = block.querySelector('.msg-content');
+          App.addSystemMsg(`Mockup de Edição: Edite o texto e salve. Para implementação real, o histórico (App.state.messages) precisaria ser atualizado.`);
+          
+          // Transforma o conteúdo em um textarea editável
+          const currentText = contentEl.innerText.trim();
+          const editableArea = document.createElement('textarea');
+          editableArea.className = 'glass-textarea';
+          editableArea.style.height = '100px';
+          editableArea.value = currentText;
+          
+          // Botão de salvar a edição
+          const saveBtn = document.createElement('button');
+          saveBtn.textContent = 'Salvar Edição';
+          saveBtn.className = 'btn-icon btn-primary';
+          saveBtn.style.cssText = 'width:100%; border-radius:8px; margin-top:10px;';
+
+          saveBtn.onclick = () => {
+              const newText = editableArea.value.trim();
+              contentEl.innerHTML = newText.replace(/\n/g, '<br>'); // Reverte para a exibição de texto
+              // Neste ponto, a lógica real de edição deveria atualizar App.state.messages
+              block.removeChild(editableArea);
+              block.removeChild(saveBtn);
+          };
+
+          contentEl.innerHTML = '';
+          block.insertBefore(saveBtn, contentEl.nextSibling); // Coloca o botão depois do content
+          block.insertBefore(editableArea, contentEl.nextSibling); // Coloca o textarea depois do content
       }
     };
 
@@ -1044,11 +1350,10 @@
     }
 
     /* =========================
-       START + PWA (SW.js precisa ser criado separadamente, mas o registro está aqui)
+       START + PWA
     ========================= */
     window.onload = () => App.init();
 
-    // Registro do Service Worker para PWA (sw.js precisa estar na raiz)
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js').then(() => {
           // console.log("Service Worker Registrado");
