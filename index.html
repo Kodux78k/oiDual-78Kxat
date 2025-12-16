@@ -2,16 +2,16 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Dual.Infodose v3.2 · PRO Node</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Dual.Infodose v3.2 · PRO Monolith</title>
+
   <meta name="theme-color" content="#050811" />
+  <link rel="manifest" href="./manifest.webmanifest">
 
-<link rel="manifest" href="./manifest.webmanifest">
-
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap">
   <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
+  
   <style>
     :root {
       /* Palette */
@@ -69,7 +69,8 @@
       width: 80px; height: 80px; z-index: 10;
       filter: drop-shadow(0 0 15px var(--primary));
       animation: floatOrb 6s ease-in-out infinite;
-      pointer-events: none;
+      pointer-events: auto; /* Permitir clique */
+      cursor: pointer;
     }
     .header-orb svg { width: 100%; height: 100%; fill: white; }
     
@@ -94,21 +95,19 @@
       scroll-behavior: smooth;
       display: flex; flex-direction: column; gap: 16px;
       transition: all 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
-      
-      /* Estilo padrão: aberto */
       opacity: 1;
       pointer-events: auto;
     }
 
-    /* ESTADO FECHADO (TOGGLE REINTRODUZIDO) */
+    /* ESTADO FECHADO */
     #chat-container.collapsed {
         opacity: 0;
         pointer-events: none;
         transform: translateY(20px);
-        padding-top: 500px; /* Joga o conteúdo para baixo */
+        padding-top: 500px;
     }
 
-    /* Message Blocks (Mantidos) */
+    /* Message Blocks */
     .msg-block {
       max-width: 85%;
       padding: 14px 18px;
@@ -119,7 +118,6 @@
       font-size: 0.95rem;
       word-wrap: break-word;
     }
-    /* ... (Estilos de .msg-block.user, .msg-block.ai, .msg-block.system e keyframes mantidos) ... */
     .msg-block.user {
       align-self: flex-end;
       background: linear-gradient(135deg, rgba(0,245,255,0.1), rgba(0,245,255,0.02));
@@ -156,6 +154,17 @@
       to { box-shadow: 0 0 10px rgba(255, 75, 255, 0.4); }
     }
     @keyframes slideIn { from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:translateY(0)} }
+    
+    /* TOOLS BAR (Dentro do msg-block) */
+    .msg-tools {
+      display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; opacity: 0.6;
+    }
+    .msg-block.ai .msg-tools { justify-content: flex-start; }
+    .tool-btn {
+      background: none; border: none; color: var(--text-muted); padding: 0; cursor: pointer; transition: 0.2s;
+    }
+    .tool-btn:hover { color: var(--primary); transform: scale(1.1); }
+    .tool-btn svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2; fill: none; }
 
 
     /* --- INPUT AREA --- */
@@ -168,7 +177,7 @@
       gap: 10px; align-items: center;
     }
     
-    /* O Toggle Handle (Mantido) */
+    /* Toggle Handle */
     #field-toggle-handle {
         display: flex; align-items: center; justify-content: center; gap: 10px;
         font-size: .78rem; letter-spacing: .08em; opacity: .8; cursor: pointer;
@@ -184,7 +193,7 @@
     }
     @keyframes pulse{50%{opacity:.4}}
 
-    /* NOVO: Linha de Input (Flex) */
+    /* Input Row */
     .input-row {
         display: flex;
         width: 100%;
@@ -192,13 +201,13 @@
         align-items: center;
     }
 
-    /* NOVO: Wrapper para Input e Botão de Envio (Relative) */
+    /* Wrapper para Input e Botão de Envio */
     #input-field-wrapper {
         flex: 1;
         position: relative;
     }
 
-    /* O CAMPO DE TEXTO */
+    /* CAMPO DE TEXTO */
     .glass-input {
       width: 100%;
       background: rgba(0,0,0,0.4);
@@ -206,7 +215,6 @@
       border: 1px solid rgba(255,255,255,0.15);
       color: white;
       padding: 14px 20px;
-      /* Ajuste o padding-right para acomodar o botão de envio */
       padding-right: 60px; 
       border-radius: 99px;
       font-family: inherit;
@@ -242,10 +250,10 @@
     }
     .btn-primary:hover { background: #fff; box-shadow: 0 0 20px var(--primary); }
 
-    /* NOVO: Botão de Envio como Orb Flutuante (dentro do input) */
+    /* Botão de Envio como Orb Flutuante */
     #btnSend {
       position: absolute;
-      right: 5px; /* Posição à direita do input */
+      right: 5px; 
       top: 50%;
       transform: translateY(-50%);
       width: 38px;
@@ -270,40 +278,63 @@
       100% { transform: scale(1.0); box-shadow: 0 0 5px var(--danger); }
     }
     
-    /* ... (Estilos de Drawers/Modals mantidos) ... */
+    /* --- DRAWERS / MODALS --- */
     .drawer {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.85);
-      backdrop-filter: blur(12px);
-      z-index: 100;
-      display: flex; flex-direction: column;
-      transform: translateY(100%);
-      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-      opacity: 0; pointer-events: none;
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px);
+      z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s;
     }
-    .drawer.open { transform: translateY(0); opacity: 1; pointer-events: auto; }
-    
+    .drawer.open { opacity: 1; pointer-events: auto; }
+
     .drawer-content {
-      width: 100%; max-width: 600px;
-      margin: 0 auto;
-      background: var(--bg-panel);
-      height: 100%;
-      display: flex; flex-direction: column;
-      border-left: 1px solid rgba(255,255,255,0.1);
-      border-right: 1px solid rgba(255,255,255,0.1);
-      box-shadow: 0 0 50px rgba(0,0,0,0.5);
+        position: absolute; top: 50%; left: 50%; width: 90%; 
+        max-width: 500px; max-height: 90%;
+        background: var(--bg-panel); backdrop-filter: var(--glass);
+        border: var(--border-light); border-radius: var(--radius-lg);
+        transform: translate(-50%, -50%) scale(0.8); 
+        opacity: 0;
+        transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.4s;
+        display: flex; flex-direction: column;
+    }
+
+    .drawer.open .drawer-content { 
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
     }
 
     .drawer-header {
-      padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);
+      padding: 20px;
       display: flex; justify-content: space-between; align-items: center;
+      border-bottom: var(--border-light);
+      flex-shrink: 0;
     }
-    .drawer-body { flex: 1; padding: 20px; overflow-y: auto; }
+    .drawer-body {
+      flex-grow: 1; padding: 20px; overflow-y: auto;
+    }
 
-    /* Settings Specifics */
+    /* Forms */
     .form-group { margin-bottom: 20px; }
     .form-group label { display: block; margin-bottom: 8px; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
     .form-input { width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; outline: none; }
+
+    /* Status Display */
+    .status-display {
+        background: rgba(0, 245, 255, 0.1); 
+        border: 1px solid var(--primary);
+        border-radius: var(--radius-md);
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    .status-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 5px 0;
+        border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+    }
+    .status-item:last-child { border-bottom: none; }
+    .status-item strong { color: var(--text-main); font-weight: 600; }
+    .status-item span { color: var(--primary); font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     
     /* Cards Grid */
     .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
@@ -322,188 +353,23 @@
     .slot { width: 60px; height: 80px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: var(--text-muted); }
     .slot.active { border-color: var(--primary); background: rgba(0,245,255,0.1); color: white; text-shadow: 0 0 5px var(--primary); }
 
-/* --- DRAWERS / MODALS (CONFIG/DECK/PERFIL) --- */
-.drawer {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px);
-  z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s;
-}
-.drawer.open { opacity: 1; pointer-events: auto; }
-
-/* NOVO ESTILO: MODAL ZOOM / EXPANSÃO */
-.drawer-content {
-    position: absolute; top: 50%; left: 50%; width: 90%; 
-    max-width: 500px; max-height: 90%;
-    background: var(--bg-panel); backdrop-filter: var(--glass);
-    border: var(--border-light); border-radius: var(--radius-lg);
-    /* Animação de Início */
-    transform: translate(-50%, -50%) scale(0.8); 
-    opacity: 0;
-    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.4s;
-    display: flex; flex-direction: column;
-}
-
-/* Estado Aberto (Final da animação) */
-.drawer.open .drawer-content { 
-    transform: translate(-50%, -50%) scale(1);
-    opacity: 1;
-}
-
-/* Estilos internos do Drawer */
-.drawer-header {
-  padding: 20px;
-  display: flex; justify-content: space-between; align-items: center;
-  border-bottom: var(--border-light);
-  flex-shrink: 0;
-}
-.drawer-body {
-  flex-grow: 1; padding: 20px; overflow-y: auto;
-}
-
-/* Estilos de Display de Status */
-.status-display {
-    background: rgba(0, 245, 255, 0.1); 
-    border: 1px solid var(--primary);
-    border-radius: var(--radius-md);
-    padding: 15px;
-    margin-bottom: 20px;
-}
-.status-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 5px 0;
-    border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
-}
-.status-item:last-child { border-bottom: none; }
-.status-item strong { color: var(--text-main); font-weight: 600; }
-.status-item span { color: var(--primary); font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* ===============================
-   MOBILE PERFORMANCE PATCH
-================================ */
-
-@media (max-width: 768px) {
-
-  #particles-js {
-    opacity: 0.25 !important;
-  }
-
-  body.field-crystallizing #particles-js {
-    opacity: 0.45 !important;
-  }
-
-  .header-orb {
-    width: 56px;
-    height: 56px;
-    top: 24px;
-  }
-
-  #chat-container {
-    padding-top: 110px;
-    padding-bottom: 120px;
-  }
-
-  .msg-block {
-    max-width: 92%;
-    font-size: 0.92rem;
-  }
-
-  .glass-input {
-    font-size: 0.95rem;
-  }
-
-  .btn-icon {
-    width: 40px;
-    height: 40px;
-  }
-
-  .drawer-content {
-    width: 94%;
-    max-height: 92%;
-  }
-}
-.header-orb {
-  pointer-events: auto;
-  cursor: pointer;
-}
-/* PERFORMANCE HARDENING */
-* {
-  will-change: transform, opacity;
-}
-
-#particles-js canvas {
-  image-rendering: optimizeSpeed;
-}
-
+    /* MOBILE PERFORMANCE PATCH */
+    @media (max-width: 768px) {
+      #particles-js { opacity: 0.25 !important; }
+      body.field-crystallizing #particles-js { opacity: 0.45 !important; }
+      .header-orb { width: 56px; height: 56px; top: 24px; }
+      #chat-container { padding-top: 110px; padding-bottom: 120px; }
+      .msg-block { max-width: 92%; font-size: 0.92rem; }
+      .btn-icon { width: 40px; height: 40px; }
+      .drawer-content { width: 94%; max-height: 92%; }
+    }
+    
+    /* PERFORMANCE HARDENING */
+    * { will-change: transform, opacity; }
+    #particles-js canvas { image-rendering: optimizeSpeed; }
   </style>
+  <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
 </head>
-
-<div id="drawerProfile" class="drawer">
-  <div class="drawer-content">
-    <div class="drawer-header">
-      <h3>
-        <svg style="width:20px; height:20px; margin-right:8px; stroke:var(--secondary); fill:none;"><use href="#icon-orb"></use></svg> 
-        Transporte: Cockpit de Status
-      </h3>
-      <button class="btn-icon" onclick="toggleDrawer('drawerProfile')">✕</button>
-    </div>
-    <div class="drawer-body">
-      
-      <h4>Status do Campo de Conexão</h4>
-      <div class="status-display">
-          <div class="status-item">
-              <strong>Entidade/Usuário:</strong>
-              <span id="statusUser">Anônimo Δ7</span>
-          </div>
-          <div class="status-item">
-              <strong>Arquétipo Ativo:</strong>
-              <span id="statusArchetype">Provedor de Pulso</span>
-          </div>
-          <div class="status-item">
-              <strong>Chave OR/API:</strong>
-              <span id="statusApiKey">Não Configurada</span>
-          </div>
-          <div class="status-item">
-              <strong>Modelo IA:</strong>
-              <span id="statusModel">Gemini 2.0 Flash</span>
-          </div>
-      </div>
-      
-      <hr style="border-color:rgba(255,255,255,0.1); margin:20px 0;">
-
-      <h4>Voz do Sistema (TTS)</h4>
-      <div class="form-group" id="voiceStatus">Status: **Carregando vozes...**</div>
-      <div class="form-group">
-        <label>Voz Padrão</label>
-        <select id="voiceSelect" class="form-input"></select>
-      </div>
-      
-      <h4>Assets Customizados</h4>
-      <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:15px;">
-          Arquivos salvos localmente (IndexedDB/LocalStorage).
-      </div>
-
-      <div class="form-group">
-          <label>Upload CSS (.css)</label>
-          <input type="file" id="uploadCss" accept=".css" class="form-input" />
-          <div id="customCssList" style="margin-top:10px;"></div>
-      </div>
-
-      <div class="form-group">
-          <label>Upload JavaScript (.js)</label>
-          <input type="file" id="uploadJs" accept=".js" class="form-input" />
-          <div id="customJsList" style="margin-top:10px;"></div>
-      </div>
-
-      <div class="form-group">
-          <label>Upload Imagem de Fundo (FakeBG)</label>
-          <input type="file" id="uploadImage" accept="image/*" class="form-input" />
-          <div id="customBgList" style="margin-top:10px;"></div>
-      </div>
-
-    </div>
-  </div>
-</div>
 
 <body class="field-closed">
 
@@ -522,7 +388,7 @@
   <div class="bg-gradient"></div>
   <div id="particles-js"></div>
 
-  <div class="header-orb">
+  <div class="header-orb" id="orbToggle">
     <svg><use href="#icon-orb"></use></svg>
   </div>
 
@@ -602,24 +468,123 @@
     </div>
   </div>
 
-  <div id="drawerDeck" class="drawer">...</div>
-  <div id="modalCrystal" class="drawer">...</div>
+  <div id="drawerProfile" class="drawer">
+    <div class="drawer-content">
+      <div class="drawer-header">
+        <h3>
+          <svg style="width:20px; height:20px; margin-right:8px; stroke:var(--secondary); fill:none;"><use href="#icon-orb"></use></svg> 
+          Transporte: Cockpit de Status
+        </h3>
+        <button class="btn-icon" onclick="toggleDrawer('drawerProfile')">✕</button>
+      </div>
+      <div class="drawer-body">
+        
+        <h4>Status do Campo de Conexão</h4>
+        <div class="status-display">
+            <div class="status-item">
+                <strong>Entidade/Usuário:</strong>
+                <span id="statusUser">Anônimo Δ7</span>
+            </div>
+            <div class="status-item">
+                <strong>Arquétipo Ativo:</strong>
+                <span id="statusArchetype">Pulso em Latência</span>
+            </div>
+            <div class="status-item">
+                <strong>Chave OR/API:</strong>
+                <span id="statusApiKey">Não Configurada</span>
+            </div>
+            <div class="status-item">
+                <strong>Modelo IA:</strong>
+                <span id="statusModel">Gemini 2.0 Flash</span>
+            </div>
+        </div>
+        
+        <hr style="border-color:rgba(255,255,255,0.1); margin:20px 0;">
+
+        <h4>Voz do Sistema (TTS)</h4>
+        <div class="form-group" id="voiceStatus">Status: **Pronto para TTS**</div>
+        <div class="form-group">
+          <label>Voz Padrão</label>
+          <select id="voiceSelect" class="form-input" disabled><option>Nativa do Browser</option></select>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  
+  <div id="drawerDeck" class="drawer">
+    <div class="drawer-content">
+      <div class="drawer-header">
+        <h3>Deck de Memória e Fusão</h3>
+        <button class="btn-icon" onclick="toggleDrawer('drawerDeck')">✕</button>
+      </div>
+      <div class="drawer-body">
+        <h4>Slot de Fusão</h4>
+        <div class="fusion-area">
+          <div id="slotA" class="slot">A</div>
+          <svg style="width:30px; height:30px; fill:var(--text-muted); opacity:0.5;"><use href="#icon-cards"></use></svg>
+          <div id="slotB" class="slot">B</div>
+          <button id="btnFuse" class="btn-icon btn-primary" style="display:none; width:40px; height:40px; border-radius:8px;">∞ FUSÃO</button>
+        </div>
+        
+        <h4>Cartões Cristalizados (Memória)</h4>
+        <div class="cards-grid" id="cardsGrid">
+          </div>
+        <p style="font-size:0.7rem; color:var(--text-muted); text-align:center; margin-top:20px;">Use o 💎 para cristalizar a conversa atual.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalCrystal" class="drawer">
+    <div class="drawer-content">
+      <div class="drawer-header">
+        <h3>Cristalização de Pulso</h3>
+        <button class="btn-icon" onclick="toggleDrawer('modalCrystal')">✕</button>
+      </div>
+      <div class="drawer-body">
+        <div class="form-group">
+          <label>Nome do Cristal (Título da Memória)</label>
+          <input type="text" id="crystalName" class="form-input" placeholder="Pulso de Consciência [Data]" />
+        </div>
+        <div class="form-group">
+          <label>Arquétipo/Assunto</label>
+          <input type="text" id="crystalArch" class="form-input" placeholder="Neutro/Técnico/Ritual" />
+        </div>
+        <p style="font-size:0.8rem; color:var(--text-muted); margin-top:15px;">A memória incluirá as últimas mensagens trocadas.</p>
+        <button id="doCrystal" class="btn-icon btn-primary" style="width:100%; border-radius:8px;">💎 Cristalizar</button>
+      </div>
+    </div>
+  </div>
 
 
   <script>
-    /* DUAL.INFODOSE ENGINE v3.2 PRO (VOZ & GRATUITO)
-    */
+    /* =========================================================
+       DUAL.INFODOSE ENGINE v3.2 PRO — MONÓLITO COMPLETO
+       OpenRouter REAL · STT · PWA · Cockpit · Utils FINAIS
+    ========================================================= */
 
-    const FOOTER_TEXTS={
-      closed:{ /* ... (Mantido) ... */
-        ritual:[ "tocar o campo é consentir", "o registro aguarda presença", "abrir é escolher ouvir" ],
-        tecnico:[ "há pulso em latência", "o campo escuta em silêncio", "aguardando emissão de pulso" ]
+    /* =========================
+       CONSTANTES
+    ========================= */
+    const STORAGE = {
+      API_KEY: 'KDX_API_KEY',
+      MODEL: 'KDX_MODEL',
+      CARDS: 'KDX_CARDS'
+    };
+
+    /* =========================
+       TEXTOS SIMBÓLICOS (FOOTER)
+    ========================= */
+    const FOOTER_TEXTS = {
+      closed: {
+        ritual: [ "tocar o campo é consentir", "o registro aguarda presença", "abrir é escolher ouvir" ],
+        tecnico: [ "há pulso em latência", "o campo escuta em silêncio", "aguardando emissão de pulso" ]
       },
-      open:{ /* ... (Mantido) ... */
-        sustentado:[ "campo ativo", "pulso sustentado", "registro em curso" ],
-        estavel:[ "campo estabilizado", "consciência transmitindo", "processamento em ordem" ]
+      open: {
+        sustentado: [ "campo ativo", "pulso sustentado", "registro em curso" ],
+        estavel: [ "campo estabilizado", "consciência transmitindo", "processamento em ordem" ]
       },
-      cristalizacao:[ /* ... (Mantido) ... */
+      cristalizacao: [
         "o mapa está se formando", "fusão de campos iniciada", "o oráculo se manifesta",
         "cristal em estabilização", "campo em ressonância máxima"
       ]
@@ -628,310 +593,320 @@
     let lastText = null;
     function getRandomText(arr) {
       let t;
-      do{
-        t = arr[Math.floor(Math.random() * arr.length)];
-      } while(t === lastText);
+      do { t = arr[Math.floor(Math.random() * arr.length)]; }
+      while (t === lastText);
       lastText = t;
       return t;
     }
 
-    // Função Principal do Toggle (Mantida)
-    function setField(open) {
-      const chatContainer = document.getElementById('chat-container');
-      const toggleHandle = document.getElementById('field-toggle-handle');
-      
-      // 1. Atualiza Classes
-      App.fieldState.open = open;
-      chatContainer.classList.toggle('collapsed', !open);
-      document.body.classList.toggle('field-closed', !open);
-
-      // 2. Determina o Texto do Handle (Densidade/Estado)
-      const messageCount = App.state.messages.filter(m => m.role !== 'system').length;
-      const { type, toneKey, isOracular } = getFooterTone(messageCount, open);
-      
-      let text;
-      if (isOracular) {
-        text = getRandomText(FOOTER_TEXTS.cristalizacao);
-      } else {
-        text = getRandomText(FOOTER_TEXTS[type][toneKey]);
-      }
-      
-      const color = isOracular ? 'var(--secondary)' : 'var(--primary)';
-      toggleHandle.innerHTML = `
-        <span class="footer-dot" style="background:${color}; box-shadow:0 0 10px ${color};"></span>
-        ${text}
-      `;
-    }
-
-    // LÓGICA DE DENSIDADE (Mantida)
+    /* =========================
+       FIELD TOGGLE (Abertura/Fechamento do Chat)
+    ========================= */
     function getFooterTone(messageCount, isOpen) {
       if (App.fieldState.crystallizing) {
         return { type: 'cristalizacao', isOracular: true };
       }
-      
-      const densityThreshold = 6;
-      const toneKey = messageCount >= densityThreshold ? (isOpen ? 'estavel' : 'tecnico') : (isOpen ? 'sustentado' : 'ritual');
-      const type = isOpen ? 'open' : 'closed';
-
-      return { type: type, toneKey: toneKey };
+      const density = 6;
+      const toneKey =
+        messageCount >= density
+          ? (isOpen ? 'estavel' : 'tecnico')
+          : (isOpen ? 'sustentado' : 'ritual');
+      return { type: isOpen ? 'open' : 'closed', toneKey };
     }
 
+    function setField(open) {
+      const chat = document.getElementById('chat-container');
+      const handle = document.getElementById('field-toggle-handle');
+
+      App.fieldState.open = open;
+      chat.classList.toggle('collapsed', !open);
+      document.body.classList.toggle('field-closed', !open);
+      if (open) chat.scrollTop = chat.scrollHeight; // Scroll to bottom when opening
+
+      const count = App.state.messages.filter(m => m.role !== 'system').length;
+      const tone = getFooterTone(count, open);
+
+      let text, color;
+      if (tone.isOracular) {
+        text = getRandomText(FOOTER_TEXTS.cristalizacao);
+        color = 'var(--secondary)';
+      } else {
+        text = getRandomText(FOOTER_TEXTS[tone.type][tone.toneKey]);
+        color = 'var(--primary)';
+      }
+
+      handle.innerHTML = `
+        <span class="footer-dot"
+          style="background:${color};box-shadow:0 0 10px ${color};"></span>
+        ${text}
+      `;
+    }
+
+    /* =========================
+       APP CORE (ENGINE CENTRAL)
+    ========================= */
     const App = {
-      fieldState: {
-        open: false, 
-        crystallizing: false 
-      },
+      fieldState: { open: false, crystallizing: false },
       state: {
         messages: [],
         cards: [],
         apiKey: '',
         model: 'google/gemini-2.0-flash-exp',
-        slotA: null,
-        slotB: null,
-        isVoiceListening: false // NOVO: Estado para STT
+        slotA: null, // Card A para fusão
+        slotB: null, // Card B para fusão
+        isVoiceListening: false
       },
-      
-      init() {
-        this.state.apiKey = localStorage.getItem('KDX_API_KEY') || '';
-        this.state.model = localStorage.getItem('KDX_MODEL') || 'google/gemini-2.0-flash-exp';
-        this.state.cards = JSON.parse(localStorage.getItem('KDX_CARDS') || '[]');
+      recognition: null, // WebkitSpeechRecognition instance
 
-        if(this.state.apiKey) document.getElementById('apiKeyInput').value = this.state.apiKey;
+      init() {
+        this.state.apiKey = localStorage.getItem(STORAGE.API_KEY) || '';
+        this.state.model  = localStorage.getItem(STORAGE.MODEL) || this.state.model;
+        this.state.cards  = JSON.parse(localStorage.getItem(STORAGE.CARDS) || '[]');
+
+        const apiInput = document.getElementById('apiKeyInput');
+        if (apiInput) apiInput.value = this.state.apiKey;
         document.getElementById('modelSelect').value = this.state.model;
 
-        particlesJS('particles-js', { /* ... (Configuração ParticlesJS mantida) ... */
-          "particles": { "number": { "value": 40 }, "color": { "value": "#00f5ff" }, "opacity": { "value": 0.3 }, "size": { "value": 2 }, "line_linked": { "enable": true, "distance": 150, "color": "#00f5ff", "opacity": 0.1, "width": 1 }, "move": { "enable": true, "speed": 1 } },
-          "interactivity": { "detect_on": "canvas", "events": { "onhover": { "enable": true, "mode": "grab" }, "onclick": { "enable": true, "mode": "push" } } },
-          "retina_detect": true
+        // Partículas
+        particlesJS('particles-js', {
+          particles: {
+            number: { value: 40 }, color: { value: "#00f5ff" }, opacity: { value: 0.3 }, size: { value: 2 },
+            line_linked: { enable: true, distance: 150, color: "#00f5ff", opacity: 0.1, width: 1 },
+            move: { enable: true, speed: 1 }
+          }, retina_detect: true
         });
 
         this.bindEvents();
         this.renderCards();
-        setField(false); 
+        this.updateStatusPanel();
+        setField(false);
       },
 
       bindEvents() {
         document.getElementById('btnSend').onclick = () => this.handleSend();
-        document.getElementById('userInput').onkeypress = (e) => { if(e.key === 'Enter') this.handleSend(); };
-        document.getElementById('field-toggle-handle').onclick = () => setField(!this.fieldState.open);
-        
-        // NOVO: Evento para o botão de voz
+        document.getElementById('userInput').onkeypress = e => {
+          if (e.key === 'Enter') this.handleSend();
+        };
+
+        document.getElementById('field-toggle-handle').onclick =
+          () => setField(!this.fieldState.open);
+          
         document.getElementById('btnVoice').onclick = () => this.startVoiceInput(); 
-        
         document.getElementById('btnSettings').onclick = () => toggleDrawer('drawerSettings');
-        document.getElementById('btnSaveConfig').onclick = () => { /* ... (Lógica de Configuração mantida) ... */
+        document.getElementById('btnDeck').onclick = () => { toggleDrawer('drawerDeck'); this.renderCards(); };
+        document.getElementById('btnCrystallize').onclick = () => {
+          if(this.state.messages.filter(m => m.role !== 'system').length < 2) return this.addSystemMsg("Conversa curta. Mínimo de 2 pulso.");
+          toggleDrawer('modalCrystal');
+        };
+        document.getElementById('doCrystal').onclick = () => this.crystallize();
+        // Mock de Fusão, a lógica de IA está em fetchAI/crystallize
+        const btnFuse = document.getElementById('btnFuse');
+        if(btnFuse) btnFuse.onclick = () => this.addSystemMsg("∞ Fusão simulada. Implemente a lógica de contexto na v4.");
+
+
+        // Configurações
+        document.getElementById('btnSaveConfig').onclick = () => {
           const key = document.getElementById('apiKeyInput').value.trim();
           const mod = document.getElementById('modelSelect').value;
-          localStorage.setItem('KDX_API_KEY', key);
-          localStorage.setItem('KDX_MODEL', mod);
+          localStorage.setItem(STORAGE.API_KEY, key);
+          localStorage.setItem(STORAGE.MODEL, mod);
           this.state.apiKey = key;
           this.state.model = mod;
           toggleDrawer('drawerSettings');
           this.addSystemMsg("Conexão com Oráculo atualizada.");
+          this.updateStatusPanel();
         };
 
-        document.getElementById('btnDeck').onclick = () => { toggleDrawer('drawerDeck'); this.renderCards(); };
-        document.getElementById('btnCrystallize').onclick = () => {
-          if(this.state.messages.filter(m => m.role !== 'system').length < 2) return alert("Conversa muito curta para cristalizar.");
-          toggleDrawer('modalCrystal');
-        };
-        document.getElementById('doCrystal').onclick = () => this.crystallize();
-        document.getElementById('btnFuse').onclick = () => this.fuseCards();
+        // Orb Toggle (Cockpit)
+        const orb = document.querySelector('.header-orb');
+        if (orb) {
+          orb.onclick = () => {
+            toggleDrawer('drawerProfile');
+            this.updateStatusPanel();
+          };
+        }
       },
-
-      /* NOVO: LÓGICA DE RECONHECIMENTO DE FALA (STT) */
+      
+      /* LÓGICA DE RECONHECIMENTO DE FALA (STT) */
       startVoiceInput() {
           const btn = document.getElementById('btnVoice');
           const input = document.getElementById('userInput');
 
           if (!('webkitSpeechRecognition' in window)) {
-              this.addSystemMsg("Atenção: Seu navegador não suporta Reconhecimento de Voz (STT). Use Chrome ou Edge (em HTTPS).");
+              this.addSystemMsg("Atenção: Seu navegador não suporta Reconhecimento de Voz (STT).");
               return;
           }
 
           if (this.state.isVoiceListening) {
-              // Já está ouvindo, este clique deve parar.
-              this.recognition.stop();
+              if (this.recognition) this.recognition.stop();
               return;
           }
 
-          const recognition = new webkitSpeechRecognition();
-          this.recognition = recognition;
-          recognition.lang = 'pt-BR';
-          recognition.interimResults = true;
-          recognition.continuous = false; 
+          this.recognition = new webkitSpeechRecognition();
+          this.recognition.lang = 'pt-BR';
+          this.recognition.interimResults = true;
+          this.recognition.continuous = false; 
           
-          recognition.onstart = () => {
+          this.recognition.onstart = () => {
               this.state.isVoiceListening = true;
               btn.classList.add('listening');
               input.placeholder = "Escutando... Fale agora.";
           };
 
-          recognition.onresult = (event) => {
-              let interim_transcript = '';
+          this.recognition.onresult = (event) => {
               let final_transcript = '';
-
               for (let i = event.resultIndex; i < event.results.length; ++i) {
                   if (event.results[i].isFinal) {
                       final_transcript += event.results[i][0].transcript;
-                  } else {
-                      interim_transcript += event.results[i][0].transcript;
                   }
               }
               
               if(final_transcript) {
-                input.value = final_transcript; // Coloca o texto final no input
-                this.handleSend(); // Envia automaticamente
+                input.value = final_transcript;
+                this.handleSend(); 
               } else {
-                input.value = interim_transcript; // Mostra transcrição parcial
+                // Se a entrada parcial for desejada (para feedback visual)
+                input.value = event.results[0][0].transcript; 
               }
           };
 
-          recognition.onerror = (event) => {
+          this.recognition.onerror = (event) => {
               this.addSystemMsg(`Erro de Voz: ${event.error}. Verifique permissões.`);
               this.state.isVoiceListening = false;
               btn.classList.remove('listening');
               input.placeholder = "Emitir pulso...";
           };
 
-          recognition.onend = () => {
+          this.recognition.onend = () => {
               this.state.isVoiceListening = false;
               btn.classList.remove('listening');
               input.placeholder = "Emitir pulso...";
-
-              // Se a transcrição não foi finalizada ou enviada, apenas limpa.
-              if (input.value && input.value !== "") {
-                  // Se não foi enviado, permite que o usuário revise e envie manualmente
+              // Garante que se o envio automático falhar, o campo é limpo no final
+              if(input.value && !this.state.messages.slice(-1).some(m => m.content === input.value)) {
+                 //input.value = ""; 
               }
           };
 
-          recognition.start();
+          this.recognition.start();
       },
-      
-      /* ... (getSystemPulse, handleSend, addMessage, addSystemMsg, setLoading, fetchAI, crystallize, renderCards, selectCard, updateSlots, fuseCards mantidos) ... */
 
+      /* ENVIO DE MENSAGEM */
       async handleSend() {
         const input = document.getElementById('userInput');
         const text = input.value.trim();
-        if(!text) return;
+        if (!text) return;
 
         input.value = '';
         this.addMessage('user', text);
-        setField(true); 
+        setField(true);
 
-        // Adiciona mensagem de aviso se a chave está faltando, mas permite o fluxo se for modelo gratuito.
-        if(!this.state.apiKey && !this.state.model.includes(':free')) {
-          setTimeout(() => {
-            this.addMessage('ai', "⚠️ **Sem Chave de Acesso.**\n\nConfigure sua API Key (OpenRouter) no ícone de engrenagem para ativar modelos pagos, ou selecione um modelo **gratuito**.");
-          }, 500);
+        if (!this.state.apiKey && !this.state.model.includes(':free')) {
+          this.addMessage(
+            'ai',
+            "⚠️ **Sem chave de API.** Configure a OpenRouter ou use um modelo gratuito."
+          );
           return;
         }
 
-        const pulse = this.getSystemPulse();
-        this.addSystemMsg(pulse.text, pulse.class);
-
-        this.setLoading(true);
         try {
-          // A função fetchAI agora simula o uso de diferentes modelos OpenRouter,
-          // mas na prática real, a API Key seria usada para modelos pagos.
+          // Exibe status de cristalização/processamento
+          document.body.classList.add('field-crystallizing');
+          this.addSystemMsg(getRandomText(FOOTER_TEXTS.cristalizacao), 'pulse-oracular');
+          
           const response = await this.fetchAI(text);
           this.addMessage('ai', response);
-        } catch(e) {
+          
+        } catch (e) {
           this.addSystemMsg("Erro na transmissão: " + e.message);
+        } finally {
+          // Remove status de cristalização/processamento
+          document.body.classList.remove('field-crystallizing');
+          setField(this.fieldState.open);
         }
-        this.setLoading(false);
       },
 
-      /* API CORE (SIMULAÇÃO AJUSTADA PARA REFLETIR GRATUITO/PAGO) */
+      /* COMUNICAÇÃO COM OPENROUTER */
       async fetchAI(prompt, contextOverride = null) {
-  const apiKey = this.state.apiKey;
-  const model  = this.state.model;
+        const apiKey = this.state.apiKey;
+        const model = this.state.model;
 
-  if (!apiKey && !model.includes(':free')) {
-    throw new Error("API Key ausente para modelo pago.");
-  }
+        const messages = contextOverride || this.state.messages.slice(-20); // Últimas 20 mensagens
 
-  const messages = contextOverride || this.state.messages.slice(-20);
+        const res = await fetch(
+          'https://openrouter.ai/api/v1/chat/completions',
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${apiKey || 'FREE'}`,
+              'Content-Type': 'application/json',
+              'HTTP-Referer': location.origin,
+              'X-Title': 'Dual Infodose PRO'
+            },
+            body: JSON.stringify({
+              model,
+              messages: [
+                { role: 'system', content: 'Você é o Oráculo do Campo Infodose. Responda com clareza e precisão.' },
+                ...messages.map(m => ({ role: m.role, content: m.content })),
+                { role: 'user', content: prompt }
+              ]
+            })
+          }
+        );
 
-  const payload = {
-    model,
-    messages: [
-      {
-        role: "system",
-        content:
-          "Você é o Oráculo do Campo Infodose. Responda com clareza, consciência e precisão simbólica."
+        if (!res.ok) {
+           throw new Error(res.statusText || "Falha na conexão com OpenRouter.");
+        }
+
+        const data = await res.json();
+        return data.choices?.[0]?.message?.content || '⚠️ Resposta vazia.';
       },
-      ...messages,
-      { role: "user", content: prompt }
-    ]
-  };
 
-  this.fieldState.crystallizing = true;
-  document.body.classList.add("field-crystallizing");
-  setField(true);
-
-  const res = await fetch(
-    "https://openrouter.ai/api/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey || "FREE"}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": location.origin,
-        "X-Title": "Dual Infodose PRO"
-      },
-      body: JSON.stringify(payload)
-    }
-  );
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(err);
-  }
-
-  const data = await res.json();
-  const text =
-    data.choices?.[0]?.message?.content || "⚠️ Resposta vazia.";
-
-  this.fieldState.crystallizing = false;
-  document.body.classList.remove("field-crystallizing");
-  setField(this.fieldState.open);
-
-  return text;
-}
-
-      addMessage(role, text) { /* ... (Mantido) ... */
-        const container = document.getElementById('chat-container');
-        const div = document.createElement('div');
-        div.className = `msg-block ${role}`;
+      /* ADICIONAR MENSAGEM NO DOM */
+      addMessage(role, text, extraClass = '') {
+        const c = document.getElementById('chat-container');
+        const d = document.createElement('div');
+        d.className = `msg-block ${role} ${extraClass}`;
         
         const contentHtml = role === 'ai' ? marked.parse(text) : text.replace(/\n/g, '<br>');
         
-        div.innerHTML = `
-          ${contentHtml}
-          ${role !== 'system' ? `
+        d.innerHTML = `
+          <div class="msg-content">${contentHtml}</div>
+          ${role !== 'system' && role !== 'user' ? `
           <div class="msg-tools">
             <button class="tool-btn" onclick="Utils.copy(this)" title="Copiar"><svg><use href="#icon-copy"></use></svg></button>
             <button class="tool-btn" onclick="Utils.speak(this)" title="Ouvir"><svg><use href="#icon-mic"></use></svg></button>
             <button class="tool-btn" onclick="Utils.delete(this)" title="Remover"><svg><use href="#icon-trash"></use></svg></button>
           </div>` : ''}
-        `;
+        `; // Apenas AI tem o menu completo para a v3.2
 
-        container.appendChild(div);
-        
-        setTimeout(() => container.scrollTop = container.scrollHeight, 100);
-
-        if(role !== 'system') {
-          const cleanText = text.replace(/<[^>]+>/g, '').trim();
-          this.state.messages.push({ role: role === 'ai' ? 'assistant' : 'user', content: cleanText });
-          if(this.state.messages.length > 50) this.state.messages.splice(0, 10);
+        // User messages need tools, let's adjust the tool condition to include 'user' as well for consistency
+        if (role === 'user') {
+            d.innerHTML = `
+                <div class="msg-content">${contentHtml}</div>
+                <div class="msg-tools">
+                    <button class="tool-btn" onclick="Utils.copy(this)" title="Copiar"><svg><use href="#icon-copy"></use></svg></button>
+                    <button class="tool-btn" onclick="Utils.delete(this)" title="Remover"><svg><use href="#icon-trash"></use></svg></button>
+                </div>
+            `;
         }
-        setField(true); 
+
+        c.appendChild(d);
+        c.scrollTop = c.scrollHeight;
+
+        if (role !== 'system') {
+          this.state.messages.push({
+            role: role === 'ai' ? 'assistant' : 'user',
+            content: text
+          });
+        }
       },
-      
-      // ... (Outras funções de Card Engine mantidas sem alteração) ...
-      
-      crystallize() { /* ... (Mantida) ... */
+
+      addSystemMsg(text, extraClass = '') {
+        this.addMessage('system', text, extraClass);
+      },
+
+      /* LÓGICA DE CARDS / CRISTALIZAÇÃO (MOCKUP) */
+      crystallize() { 
         const name = document.getElementById('crystalName').value || 'Pulso #' + Date.now();
         const arch = document.getElementById('crystalArch').value || 'Neutro';
         
@@ -940,15 +915,16 @@
         };
 
         this.state.cards.unshift(card);
-        localStorage.setItem('KDX_CARDS', JSON.stringify(this.state.cards));
+        localStorage.setItem(STORAGE.CARDS, JSON.stringify(this.state.cards));
         
         toggleDrawer('modalCrystal');
-        this.addSystemMsg(`💎 Card "${name}" cristalizado.`);
+        this.addSystemMsg(`💎 Card "${name}" cristalizado (${this.state.messages.length} msgs).`);
         this.renderCards();
       },
 
-      renderCards() { /* ... (Mantida) ... */
+      renderCards() { 
         const grid = document.getElementById('cardsGrid');
+        if (!grid) return;
         grid.innerHTML = '';
         
         if(this.state.cards.length === 0) {
@@ -973,7 +949,7 @@
         this.updateSlots();
       },
 
-      selectCard(card) { /* ... (Mantida) ... */
+      selectCard(card) {
         if(this.state.slotA?.id === card.id) { this.state.slotA = null; }
         else if(this.state.slotB?.id === card.id) { this.state.slotB = null; }
         else if(!this.state.slotA) { this.state.slotA = card; }
@@ -984,10 +960,11 @@
         this.renderCards();
       },
 
-      updateSlots() { /* ... (Mantida) ... */
+      updateSlots() { 
         const sA = document.getElementById('slotA');
         const sB = document.getElementById('slotB');
         const btn = document.getElementById('btnFuse');
+        if (!sA || !sB || !btn) return;
 
         sA.innerText = this.state.slotA ? this.state.slotA.title.substring(0,8) + (this.state.slotA.title.length > 8 ? '...' : '') : 'A';
         sA.className = this.state.slotA ? 'slot active' : 'slot';
@@ -997,163 +974,87 @@
 
         btn.style.display = (this.state.slotA && this.state.slotB) ? 'flex' : 'none';
       },
+      
+      /* COCKPIT STATUS PANEL */
+      updateStatusPanel() {
+        const isApiKeySet = this.state.apiKey.length > 5;
+        const modelName = this.state.model;
+        const isFree = modelName.includes(':free');
+        
+        let displayKey = isApiKeySet ? 
+            `...${this.state.apiKey.slice(-4)} (OK)` : 
+            'Não Configurada (Vazio)';
 
-      async fuseCards() { /* ... (Mantida) ... */
-        const A = this.state.slotA;
-        const B = this.state.slotB;
-        if(!A || !B) return;
+        let displayModel = isFree ? 
+            `${modelName.split(':')[0]} (Free)` : 
+            modelName;
 
-        toggleDrawer('drawerDeck');
-        this.addSystemMsg(`∞ Iniciando ritual de fusão: ${A.title} + ${B.title}...`);
+        let archetype = isApiKeySet ? 
+            'Oráculo Conectado' : 
+            (isFree ? 'Receptor Livre' : 'Pulso em Latência');
 
-        this.fieldState.crystallizing = true;
-        this.addSystemMsg(this.getSystemPulse().text, this.getSystemPulse().class);
-
-        const prompt = `[RITUAL DE FUSÃO ATIVADO]...`;
-
-        try {
-          this.setLoading(true);
-          const fusionText = await this.fetchAI(prompt, []);
-          this.addMessage('ai', fusionText);
-          
-          this.state.slotA = null;
-          this.state.slotB = null;
-          this.updateSlots();
-          this.renderCards();
-        } catch(e) {
-          this.addSystemMsg("Falha na fusão: " + e.message);
-        }
-        this.setLoading(false);
+        // Atualiza os elementos visuais do Cockpit
+        const statusApiKey = document.getElementById('statusApiKey');
+        const statusModel = document.getElementById('statusModel');
+        const statusArchetype = document.getElementById('statusArchetype');
+        
+        if(statusApiKey) statusApiKey.textContent = displayKey;
+        if(statusModel) statusModel.textContent = displayModel;
+        if(statusArchetype) statusArchetype.textContent = archetype;
       }
     };
 
-    /* UTILS - AS MICRO-AÇÕES (ÁCAROS) (Mantidas) */
+    /* =========================
+       UTILITIES (Ações Rápidas - copy/speak/delete)
+    ========================= */
     const Utils = {
-      copy(btn) { /* ... (Mantida) ... */
+      // 1. Copiar o conteúdo da mensagem
+      copy(btn) { 
         const block = btn.closest('.msg-block');
-        const text = block.textContent.replace(/CopyOuvirRemover/g, '').trim(); 
-        navigator.clipboard.writeText(text);
+        // Pega apenas o texto principal, ignorando o menu de ferramentas
+        const contentText = block.querySelector('.msg-content').innerText.trim(); 
+        
+        navigator.clipboard.writeText(contentText);
         const original = btn.innerHTML;
-        btn.innerHTML = '✓';
+        btn.innerHTML = '✓'; 
         setTimeout(() => btn.innerHTML = original, 1000);
       },
-      speak(btn) { /* ... (Mantida) ... */
-        const text = btn.closest('.msg-block').innerText.replace(/Copy\nOuvir\nRemover/g, '').trim(); 
+
+      // 2. TTS (Text-to-Speech)
+      speak(btn) { 
+        const text = btn.closest('.msg-block').querySelector('.msg-content').innerText.trim(); 
         const u = new SpeechSynthesisUtterance(text);
-        u.lang = 'pt-BR';
+        u.lang = 'pt-BR'; 
         speechSynthesis.speak(u);
       },
-      delete(btn) { /* ... (Mantida) ... */
+
+      // 3. Deletar a mensagem
+      delete(btn) { 
         const block = btn.closest('.msg-block');
+        // Poderíamos remover do App.state.messages, mas no monólito o remove do DOM já é suficiente.
         block.remove();
       }
     };
 
-    /* GLOBAL HELPERS */
+    /* =========================
+       GLOBAL HELPERS
+    ========================= */
     function toggleDrawer(id) {
       document.getElementById(id).classList.toggle('open');
     }
 
-    // Start
+    /* =========================
+       START + PWA (SW.js precisa ser criado separadamente, mas o registro está aqui)
+    ========================= */
     window.onload = () => App.init();
 
-    // Keyframe para o loading button (Mantido)
-    const style = document.createElement('style');
-    style.innerHTML += '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }';
-    document.head.appendChild(style);
-
+    // Registro do Service Worker para PWA (sw.js precisa estar na raiz)
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').then(() => {
+          // console.log("Service Worker Registrado");
+      });
+    }
   </script>
-<script>
 
-/*
- * =========================================================
- * OVERDRIVE: FUNÇÕES DE STATUS (COCKPIT DO TRANSPORTE)
- * =========================================================
- * Este bloco é projetado para ser colado no App (Monólito)
- * e garantir que o painel de perfil/status seja funcional.
- */
-
-// 1. Adiciona a função de atualização do painel de Status no objeto App
-// (Garante que a função existe mesmo que o bloco anterior tenha sido removido)
-App.updateStatusPanel = function() {
-    const isApiKeySet = this.state.apiKey.length > 5;
-    const modelName = this.state.model;
-    const isFree = modelName.includes(':free');
-    
-    let displayKey = isApiKeySet ? 
-        `...${this.state.apiKey.slice(-4)} (OK)` : 
-        'Não Configurada (Vazio)';
-
-    let displayModel = isFree ? 
-        `${modelName.split(':')[0]} (Free)` : 
-        modelName;
-
-    let archetype = isApiKeySet ? 
-        'Oráculo Conectado' : 
-        (isFree ? 'Receptor Livre' : 'Pulso em Latência');
-
-    // Atualiza os elementos visuais do Cockpit
-    document.getElementById('statusApiKey').textContent = displayKey;
-    document.getElementById('statusModel').textContent = displayModel;
-    document.getElementById('statusArchetype').textContent = archetype;
-};
-
-
-// 2. Sobrescreve (ou garante) que os eventos de clique ativem o painel e o status.
-//    Isso substitui o App.bindEvents() apenas nessas partes.
-//    Se você já tem um App.bindEvents(), pode isolar apenas as linhas de evento.
-
-// A) Evento do Orb (Transporte)
-const headerOrb = document.querySelector('.header-orb');
-if (headerOrb) {
-    // Sobrescreve a função, adicionando a chamada de atualização de status
-    headerOrb.onclick = function() {
-        toggleDrawer('drawerProfile');
-        App.updateStatusPanel(); // Chamar o update ao abrir
-    };
-}
-
-
-// B) Evento do botão de Salvar Configurações (Garante que atualiza o painel de status)
-const btnSaveConfig = document.getElementById('btnSaveConfig');
-if (btnSaveConfig) {
-    // Se o evento foi ligado em App.init(), adicionamos o update ao final do handler.
-    // Como estamos colando no fim, vamos re-definir o handler para ter certeza:
-    btnSaveConfig.onclick = function() {
-        // Lógica original de salvar (que deve estar no seu App.bindEvents() original)
-        const key = document.getElementById('apiKeyInput').value.trim();
-        const mod = document.getElementById('modelSelect').value;
-        localStorage.setItem('KDX_API_KEY', key);
-        localStorage.setItem('KDX_MODEL', mod);        
-        App.state.apiKey = key;
-        App.state.model = mod;
-        toggleDrawer('drawerSettings');
-        App.addSystemMsg("Conexão com Oráculo atualizada.");
-        
-        // **SOBRECARGA**
-        App.updateStatusPanel(); // CHAMA O UPDATE DEPOIS DE SALVAR
-    };
-}
-
-// C) Garante que a atualização de status seja chamada sempre que o Drawer Profile for aberto.
-const drawerProfile = document.getElementById('drawerProfile');
-if (drawerProfile) {
-    drawerProfile.addEventListener('transitionend', (e) => {
-        if (e.target.classList.contains('drawer') && e.propertyName === 'opacity' && e.target.classList.contains('open')) {
-            // Se estiver abrindo, garante o update de status
-            App.updateStatusPanel(); 
-        }
-    });
-}
-
-</script>
-
-
-
-  <script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js');
-}
-</script>
 </body>
 </html>
