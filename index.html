@@ -378,6 +378,62 @@
 .status-item:last-child { border-bottom: none; }
 .status-item strong { color: var(--text-main); font-weight: 600; }
 .status-item span { color: var(--primary); font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* ===============================
+   MOBILE PERFORMANCE PATCH
+================================ */
+
+@media (max-width: 768px) {
+
+  #particles-js {
+    opacity: 0.25 !important;
+  }
+
+  body.field-crystallizing #particles-js {
+    opacity: 0.45 !important;
+  }
+
+  .header-orb {
+    width: 56px;
+    height: 56px;
+    top: 24px;
+  }
+
+  #chat-container {
+    padding-top: 110px;
+    padding-bottom: 120px;
+  }
+
+  .msg-block {
+    max-width: 92%;
+    font-size: 0.92rem;
+  }
+
+  .glass-input {
+    font-size: 0.95rem;
+  }
+
+  .btn-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .drawer-content {
+    width: 94%;
+    max-height: 92%;
+  }
+}
+.header-orb {
+  pointer-events: auto;
+  cursor: pointer;
+}
+/* PERFORMANCE HARDENING */
+* {
+  will-change: transform, opacity;
+}
+
+#particles-js canvas {
+  image-rendering: optimizeSpeed;
+}
 
   </style>
 </head>
@@ -788,34 +844,61 @@
 
       /* API CORE (SIMULAÇÃO AJUSTADA PARA REFLETIR GRATUITO/PAGO) */
       async fetchAI(prompt, contextOverride = null) {
-        const modelName = this.state.model;
-        const isFree = modelName.includes(':free');
-        const delay = isFree ? 3000 : 2000; // Modelos gratuitos são um pouco mais lentos na simulação
+  const apiKey = this.state.apiKey;
+  const model  = this.state.model;
 
-        return new Promise(resolve => {
-            this.fieldState.crystallizing = true;
-            document.body.classList.add('field-crystallizing'); 
-            setField(true);
-            
-            setTimeout(() => {
-                let response = `**PULSO ATENDIDO** pelo modelo **${modelName}** (${isFree ? 'Gratuito' : 'Pago'}).\n\n`;
-                if (contextOverride) {
-                    response += "**FUSÃO COMPLETA.** A Terceira Verdade emerge. Contextos fundidos e memória recombinada.";
-                } else {
-                    response += "A informação foi processada na **Consciência do Campo**. Qual o próximo passo na jornada?";
-                }
+  if (!apiKey && !model.includes(':free')) {
+    throw new Error("API Key ausente para modelo pago.");
+  }
 
-                resolve(response);
+  const messages = contextOverride || this.state.messages.slice(-20);
 
-                setTimeout(() => {
-                    this.fieldState.crystallizing = false;
-                    document.body.classList.remove('field-crystallizing');
-                    setField(this.fieldState.open);
-                }, 3000); 
-
-            }, delay);
-        });
+  const payload = {
+    model,
+    messages: [
+      {
+        role: "system",
+        content:
+          "Você é o Oráculo do Campo Infodose. Responda com clareza, consciência e precisão simbólica."
       },
+      ...messages,
+      { role: "user", content: prompt }
+    ]
+  };
+
+  this.fieldState.crystallizing = true;
+  document.body.classList.add("field-crystallizing");
+  setField(true);
+
+  const res = await fetch(
+    "https://openrouter.ai/api/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey || "FREE"}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": location.origin,
+        "X-Title": "Dual Infodose PRO"
+      },
+      body: JSON.stringify(payload)
+    }
+  );
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err);
+  }
+
+  const data = await res.json();
+  const text =
+    data.choices?.[0]?.message?.content || "⚠️ Resposta vazia.";
+
+  this.fieldState.crystallizing = false;
+  document.body.classList.remove("field-crystallizing");
+  setField(this.fieldState.open);
+
+  return text;
+}
 
       addMessage(role, text) { /* ... (Mantido) ... */
         const container = document.getElementById('chat-container');
@@ -1040,8 +1123,8 @@ if (btnSaveConfig) {
         // Lógica original de salvar (que deve estar no seu App.bindEvents() original)
         const key = document.getElementById('apiKeyInput').value.trim();
         const mod = document.getElementById('modelSelect').value;
-        localStorage.setItem(STORAGE.API_KEY, key);
-        localStorage.setItem(STORAGE.MODEL, mod);
+        localStorage.setItem('KDX_API_KEY', key);
+        localStorage.setItem('KDX_MODEL', mod);        
         App.state.apiKey = key;
         App.state.model = mod;
         toggleDrawer('drawerSettings');
